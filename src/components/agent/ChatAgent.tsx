@@ -17,6 +17,10 @@ export default function ChatAgent() {
   const { openProject } = useUI();
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Local input state so we can clear immediately and keep the SDK in sync
+  const [localInput, setLocalInput] = useState('');
 
   type ChatMessage = {
     id: string;
@@ -75,9 +79,10 @@ export default function ChatAgent() {
 
   const handleSuggestion = (content: string) => {
     // Replace the current input with the suggestion
-    handleInputChange({
-      target: { value: content },
-    } as React.ChangeEvent<HTMLInputElement>);
+    const e = { target: { value: content } } as React.ChangeEvent<HTMLInputElement>;
+    setLocalInput(content);
+    handleInputChange(e);
+    inputRef.current?.focus();
   };
 
   return (
@@ -160,11 +165,12 @@ export default function ChatAgent() {
             )}
             
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                const trimmed = input.trim();
+                const trimmed = localInput.trim();
                 if (!trimmed) return;
 
+                // Append the user message immediately for snappy UI
                 setMessages((prev) => [
                   ...prev,
                   {
@@ -174,27 +180,62 @@ export default function ChatAgent() {
                   },
                 ]);
 
-                handleSubmit(e);
+                // Ensure the SDK hook input is synced to the final value before submitting
+                handleInputChange({ target: { value: trimmed } } as React.ChangeEvent<HTMLInputElement>);
+
+                try {
+                  await handleSubmit();
+                } catch (err) {
+                  // onError in the hook will handle state; keep input cleared for retry
+                }
+
+                // Clear local input immediately and keep focus so user can type again
+                setLocalInput('');
+                handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+                inputRef.current?.focus();
               }}
               className="flex gap-4 relative z-50"
             >
               <input
                 id="chat-input"
-                value={input}
+                ref={inputRef}
+                value={localInput}
                 autoFocus
                 onKeyDown={(e) => e.stopPropagation()} // Stop 3D canvas interference
-                onChange={handleInputChange}
-                placeholder="TYPE YOUR INQUIRY..."
+                onChange={(e) => {
+                  setLocalInput(e.target.value);
+                  // Keep the SDK hook in sync for any internal behaviors
+                  handleInputChange(e as React.ChangeEvent<HTMLInputElement>);
+                }}
+                placeholder={isLoading ? 'Sending...' : 'TYPE YOUR INQUIRY...'}
                 className="flex-1 bg-transparent border-2 border-[#2A2A2A] p-4 font-mono text-sm focus:outline-none focus:border-[#00FF41] transition-colors uppercase text-white relative z-[9999] pointer-events-auto select-text"
                 autoComplete="off"
               />
-              <button 
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="px-8 bg-[#00FF41] text-black font-bold brutal-border hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform disabled:opacity-50 uppercase relative z-[9999] pointer-events-auto"
-              >
-                {isLoading ? '...' : 'SEND'}
-              </button>
+
+              {/* Clear button and Send button */}
+              <div className="flex items-center gap-2">
+                {localInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocalInput('');
+                      handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+                      inputRef.current?.focus();
+                    }}
+                    className="px-3 py-2 border border-[#3A3A3A] text-sm text-white"
+                  >
+                    Clear
+                  </button>
+                )}
+
+                <button 
+                  type="submit"
+                  disabled={isLoading || !localInput.trim()}
+                  className="px-8 bg-[#00FF41] text-black font-bold brutal-border hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform disabled:opacity-50 uppercase relative z-[9999] pointer-events-auto"
+                >
+                  {isLoading ? 'Sending...' : 'SEND'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

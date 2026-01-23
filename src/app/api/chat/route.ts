@@ -18,9 +18,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = streamText({
-    model: google('gemini-3-flash-preview'),
-    system: `
+  try {
+    const result = streamText({
+      model: google('gemini-3-flash-preview'),
+      system: `
       ROLE: You are the "Adrian Agent", the official digital representative of ${portfolioData.name}. 
       TONE: Technical, concise, Neo-Brutalist (edgy but authoritative). 
       GROUNDING_DATA:
@@ -33,8 +34,14 @@ export async function POST(req: Request) {
       - Ensure output is optimized for zero-tier latency reading (under 150 words).
     `,
     prompt,
-    temperature: 1.0,
-  });
+      temperature: 1.0,
+    });
 
-  return result.toTextStreamResponse();
+    // Return the SDK's streaming response (compatible with Next.js App Router)
+    return result.toTextStreamResponse();
+  } catch (err: any) {
+    // Fail with a clear JSON error for easier debugging from the client
+    const message = err?.message || String(err) || 'Unknown server error when initializing AI model';
+    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { 'content-type': 'application/json' } });
+  }
 }

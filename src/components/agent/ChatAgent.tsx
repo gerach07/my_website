@@ -18,9 +18,8 @@ export default function ChatAgent() {
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
-  // Local input state so we can clear immediately and keep the SDK in sync
-  const [localInput, setLocalInput] = useState('');
+  // Use the SDK-provided input instead of separate local state
+  const firstChunkReceivedRef = useRef(false);
 
   type ChatMessage = {
     id: string;
@@ -75,12 +74,51 @@ export default function ChatAgent() {
     }
   }, [messages, isLoading]);
 
+  // Log when the first streaming chunk arrives so we can measure latency
+  useEffect(() => {
+    if (completion && !firstChunkReceivedRef.current) {
+      try {
+        console.log('chat:first-chunk-received', { snippet: String(completion).slice(0, 200), ts: Date.now() });
+        console.timeEnd('chat:click-to-first-word');
+      } catch (err) {
+        console.error('chat:first-chunk-log-error', err);
+      }
+      firstChunkReceivedRef.current = true;
+    }
+  }, [completion]);
+
+  // Wrap the SDK-provided handleSubmit so we can clear the input immediately
+  // for an optimistic UI and keep focus in the input while the model streams.
+  const handleSubmitWithImmediateClear = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    // Capture the prompt being sent so timing logs include it
+    const promptSnapshot = input;
+    console.log('chat:submit-clicked', { promptSnapshot, ts: Date.now() });
+
+    // reset first-chunk flag and start the click->first-word timer
+    firstChunkReceivedRef.current = false;
+    console.time('chat:click-to-first-word');
+
+    // clear visible input immediately so the UI feels responsive
+    handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
+    inputRef.current?.focus();
+
+    try {
+      // Call the hook's submit which will drive the streaming response
+      await handleSubmit(e as any);
+    } catch (err) {
+      // Hook's onError will surface errors; keep focus for retry
+      console.error('chat:submit-error', err);
+      inputRef.current?.focus();
+    }
+  };
+
   if (!mounted) return null;
 
   const handleSuggestion = (content: string) => {
     // Replace the current input with the suggestion
     const e = { target: { value: content } } as React.ChangeEvent<HTMLInputElement>;
-    setLocalInput(content);
     handleInputChange(e);
     inputRef.current?.focus();
   };
@@ -165,48 +203,16 @@ export default function ChatAgent() {
             )}
             
             <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const trimmed = localInput.trim();
-                if (!trimmed) return;
-
-                // Append the user message immediately for snappy UI
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: `user-${Date.now()}`,
-                    role: 'user',
-                    text: trimmed,
-                  },
-                ]);
-
-                // Ensure the SDK hook input is synced to the final value before submitting
-                handleInputChange({ target: { value: trimmed } } as React.ChangeEvent<HTMLInputElement>);
-
-                try {
-                  await handleSubmit();
-                } catch (err) {
-                  // onError in the hook will handle state; keep input cleared for retry
-                }
-
-                // Clear local input immediately and keep focus so user can type again
-                setLocalInput('');
-                handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
-                inputRef.current?.focus();
-              }}
+              onSubmit={handleSubmitWithImmediateClear}
               className="flex gap-4 relative z-50"
             >
               <input
                 id="chat-input"
                 ref={inputRef}
-                value={localInput}
+                value={input}
                 autoFocus
                 onKeyDown={(e) => e.stopPropagation()} // Stop 3D canvas interference
-                onChange={(e) => {
-                  setLocalInput(e.target.value);
-                  // Keep the SDK hook in sync for any internal behaviors
-                  handleInputChange(e as React.ChangeEvent<HTMLInputElement>);
-                }}
+                onChange={handleInputChange}
                 placeholder={isLoading ? 'Sending...' : 'TYPE YOUR INQUIRY...'}
                 className="flex-1 bg-transparent border-2 border-[#2A2A2A] p-4 font-mono text-sm focus:outline-none focus:border-[#00FF41] transition-colors uppercase text-white relative z-[9999] pointer-events-auto select-text"
                 autoComplete="off"
@@ -214,11 +220,10 @@ export default function ChatAgent() {
 
               {/* Clear button and Send button */}
               <div className="flex items-center gap-2">
-                {localInput && (
+                {input?.trim() && (
                   <button
                     type="button"
                     onClick={() => {
-                      setLocalInput('');
                       handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>);
                       inputRef.current?.focus();
                     }}
@@ -230,7 +235,7 @@ export default function ChatAgent() {
 
                 <button 
                   type="submit"
-                  disabled={isLoading || !localInput.trim()}
+                  disabled={isLoading || !input?.trim()}
                   className="px-8 bg-[#00FF41] text-black font-bold brutal-border hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform disabled:opacity-50 uppercase relative z-[9999] pointer-events-auto"
                 >
                   {isLoading ? 'Sending...' : 'SEND'}

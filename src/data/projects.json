@@ -1,0 +1,40 @@
+[
+  {
+    "id": "1",
+    "title": "Astra Link",
+    "tagline": "Agentic Supply Chain Optimization",
+    "situation": "Global logistics firm facing 15% latency in routing decisions due to legacy centralized systems.",
+    "task": "Migrate to an edge-computed agentic architecture to decentralize decision-making.",
+    "action": [
+      "Architected a distributed system using Rust and WebAssembly.",
+      "Implemented a peer-to-peer coordination protocol for autonomous agents.",
+      "Deployed edge nodes across 5 continents using Kubernetes."
+    ],
+    "result": {
+      "metric": "85",
+      "label": "% Reduction in Latency",
+      "suffix": "%"
+    },
+    "github": "https://github.com/example/astra",
+    "demo": "https://astra-demo.com"
+  },
+  {
+    "id": "2",
+    "title": "Quantum UI",
+    "tagline": "Generative Design System",
+    "situation": "Design teams struggling with consistency across 20+ micro-frontends.",
+    "task": "Create an AI-augmented design system that generates components based on user intent.",
+    "action": [
+      "Built a LLM-powered CLI for component generation.",
+      "Developed a 'Design Token' sync engine using Figma API.",
+      "Created a React-based interactive documentation portal."
+    ],
+    "result": {
+      "metric": "40",
+      "label": "% Increase in Velocity",
+      "suffix": "%"
+    },
+    "github": "https://github.com/example/quantum",
+    "demo": "https://quantum-ui.dev"
+  }
+]

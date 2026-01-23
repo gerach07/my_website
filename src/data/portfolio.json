@@ -1,0 +1,28 @@
+{
+  "name": "Adrian S.",
+  "role": "Senior Full-Stack Web Architect",
+  "bio": "I architect resilient, high-performance digital ecosystems. My philosophy centers on 'Agentic Performance'—creating web systems that aren't just fast, but autonomous. I specialize in bridging the gap between sophisticated AI models and high-traffic production environments, with a heavy focus on Next.js 15 and Rust-based edge compute.",
+  "skills": {
+    "frontend": ["Next.js 15 (App Router)", "React Three Fiber", "Tailwind CSS", "Framer Motion"],
+    "backend": ["Rust (Axum/Tokio)", "Node.js (TypeScript)", "PostgreSQL (Prisma/Drizzle)", "Redis"],
+    "ai_ml": ["Gemini 1.5 Pro/Flash", "LangChain/LangGraph", "Vector Search (Pinecone/pgvector)", "Prompt Engineering"],
+    "devops": ["Vercel Edge Runtime", "Docker", "AWS (Lambda/Fargate)", "GitHub Actions"]
+  },
+  "experience": [
+    {
+      "company": "Nexus Systems",
+      "role": "Lead Architect",
+      "period": "2023 - 2026",
+      "description": "Orchestrated a migration from legacy SPAs to a Next.js 15 architecture, resulting in a 45% improvement in Largest Contentful Paint (LCP) across 1.2M monthly active users. Developed an internal 'Gemini Agent' that automated 30% of DevOps triage tasks."
+    },
+    {
+      "company": "Velocity Web",
+      "role": "Senior Full-Stack Engineer",
+      "period": "2021 - 2023",
+      "description": "Built a real-time analytics dashboard using Rust and WebSockets that handled peak loads of 50k concurrent connections. Reduced database egress costs by 25% through advanced Redis caching strategies."
+    }
+  ],
+  "location": "San Francisco, CA / Global Remote",
+  "education": "BS in Computer Science (Specialization in Distributed Systems)",
+  "availability": "Available for high-impact advisory or lead architectural roles."
+}
